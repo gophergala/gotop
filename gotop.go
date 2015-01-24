@@ -100,54 +100,61 @@ func (h *history) Spark() string {
 }
 
 var (
-	allocHistory     = newHistory(60)
 	heapAllocHistory = newHistory(60)
+	stackHistory     = newHistory(60)
 )
 
 func draw(info Info) {
-	alloc := fmt.Sprintf("Alloc      : %d", info.MemStats.Alloc)
-	for i, r := range alloc {
-		tb.SetCell(i, 0, r, tb.ColorDefault, tb.ColorDefault)
+	var y int
+
+	for i, r := range fmt.Sprintf("HeapAlloc  : %d", info.MemStats.HeapAlloc) {
+		tb.SetCell(i, y, r, tb.ColorDefault, tb.ColorDefault)
 	}
 
-	heapAlloc := fmt.Sprintf("HeapAlloc  : %d", info.MemStats.HeapAlloc)
-	for i, r := range heapAlloc {
-		tb.SetCell(i, 1, r, tb.ColorDefault, tb.ColorDefault)
+	y++
+	for i, r := range fmt.Sprintf("StackInUse : %d", info.MemStats.StackInuse) {
+		tb.SetCell(i, y, r, tb.ColorDefault, tb.ColorDefault)
 	}
 
-	stackInUse := fmt.Sprintf("StackInUse : %d", info.MemStats.StackInuse)
-	for i, r := range stackInUse {
-		tb.SetCell(i, 2, r, tb.ColorDefault, tb.ColorDefault)
+	y++
+	lastGCTime := time.Unix(0, int64(info.MemStats.LastGC))
+	for i, r := range fmt.Sprintf("LastGC     : %v", lastGCTime) {
+		tb.SetCell(i, y, r, tb.ColorDefault, tb.ColorDefault)
 	}
 
+	y++
+	for i, r := range fmt.Sprintf("NextGC     : %d", info.MemStats.NextGC) {
+		tb.SetCell(i, y, r, tb.ColorDefault, tb.ColorDefault)
+	}
+	y++
+
+	y += 4
 	// Draw sparklines
 	// TODO: Try doubling or tripling the height
-
-	allocHistoryTitle := "Alloc History"
-	for i, r := range allocHistoryTitle {
-		tb.SetCell(i, 6, r, tb.ColorDefault, tb.ColorDefault)
+	y++
+	for i, r := range "HeapAlloc History" {
+		tb.SetCell(i, y, r, tb.ColorDefault, tb.ColorDefault)
 	}
 
-	allocHistory.Add(float64(info.MemStats.Alloc))
-	allocHistoryString := allocHistory.Spark()
+	y++
+	heapAllocHistory.Add(float64(info.MemStats.HeapAlloc))
 	// The index given is the byte index, not rune index.
 	i := 0
-	for _, r := range allocHistoryString {
-		tb.SetCell(i, 7, r, tb.ColorDefault, tb.ColorDefault)
+	for _, r := range heapAllocHistory.Spark() {
+		tb.SetCell(i, y, r, tb.ColorDefault, tb.ColorDefault)
 		i++
 	}
 
-	heapAllocHistoryTitle := "HeapAlloc History"
-	for i, r := range heapAllocHistoryTitle {
-		tb.SetCell(i, 8, r, tb.ColorDefault, tb.ColorDefault)
+	y++
+	for i, r := range "Stack History" {
+		tb.SetCell(i, y, r, tb.ColorDefault, tb.ColorDefault)
 	}
 
-	heapAllocHistory.Add(float64(info.MemStats.HeapAlloc))
-	heapAllocHistoryString := heapAllocHistory.Spark()
-	// The index given is the byte index, not rune index.
+	y++
+	stackHistory.Add(float64(info.MemStats.StackInuse))
 	i = 0
-	for _, r := range heapAllocHistoryString {
-		tb.SetCell(i, 9, r, tb.ColorDefault, tb.ColorDefault)
+	for _, r := range stackHistory.Spark() {
+		tb.SetCell(i, y, r, tb.ColorDefault, tb.ColorDefault)
 		i++
 	}
 }
@@ -172,7 +179,8 @@ func eventLoop() {
 		ev := tb.PollEvent()
 		switch ev.Type {
 		case tb.EventKey:
-			if ev.Key == tb.KeyEsc {
+			switch ev.Key {
+			case tb.KeyEsc, tb.KeyCtrlC:
 				tb.Close()
 				os.Exit(0)
 			}
@@ -189,10 +197,13 @@ func main() {
 	tb.Init()
 	defer tb.Close()
 
-	waiting := "Waiting..."
-	for i, r := range waiting {
+	for i, r := range "Waiting..." {
 		tb.SetCell(i, 0, r, tb.ColorDefault, tb.ColorDefault)
 	}
+	for i, r := range "Press ESC to quit" {
+		tb.SetCell(i, 1, r, tb.ColorDefault, tb.ColorDefault)
+	}
+
 	err := tb.Flush()
 	if err != nil {
 		log.Fatal(err)
