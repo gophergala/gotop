@@ -216,6 +216,13 @@ func main() {
 	tb.Init()
 	defer tb.Close()
 
+	_, err := httpGet(url)
+	if err != nil && strings.Contains(err.Error(), "decoding") {
+		tb.Close()
+		fmt.Println(err)
+		os.Exit(0)
+	}
+
 	for i, r := range "Waiting..." {
 		tb.SetCell(i, 0, r, tb.ColorDefault, tb.ColorDefault)
 	}
@@ -223,7 +230,7 @@ func main() {
 		tb.SetCell(i, 1, r, tb.ColorDefault, tb.ColorDefault)
 	}
 
-	err := tb.Flush()
+	err = tb.Flush()
 	if err != nil {
 		log.Fatal(err)
 	}
