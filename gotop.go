@@ -20,6 +20,7 @@ import (
 	tb "github.com/nsf/termbox-go"
 )
 
+// Flag variables
 var (
 	url          string
 	pollInterval time.Duration
@@ -58,18 +59,18 @@ func httpGet(url string) (*Info, error) {
 func fetchLoop(interval time.Duration, url string, infoChan chan Info) {
 	ticker := time.NewTicker(interval)
 	for {
-		select {
-		case <-ticker.C:
-			i, err := httpGet(url)
-			if err != nil {
-				log.Println(err)
-				continue
-			}
-			infoChan <- *i
+		i, err := httpGet(url)
+		if err != nil {
+			log.Println(err)
+			continue
 		}
+		infoChan <- *i
+
+		<-ticker.C
 	}
 }
 
+// Stores a rolling list of historical data
 type history struct {
 	data *list.List
 	size int
@@ -110,10 +111,10 @@ var (
 )
 
 func memToString(n uint64) string {
-	if !humane {
-		return strconv.Itoa(int(n))
+	if humane {
+		return humanise.Bytes(n)
 	}
-	return humanise.Bytes(n)
+	return strconv.Itoa(int(n))
 }
 
 func draw(info Info) {
