@@ -10,9 +10,11 @@ import (
 	"net/http"
 	"os"
 	"runtime"
+	"strconv"
 	"sync"
 	"time"
 
+	humanise "github.com/dustin/go-humanize"
 	"github.com/joliv/spark"
 	tb "github.com/nsf/termbox-go"
 )
@@ -20,11 +22,13 @@ import (
 var (
 	url          string
 	pollInterval time.Duration
+	humane       bool
 )
 
 func init() {
 	flag.StringVar(&url, "url", "", "Full url returning expvar JSON")
 	flag.DurationVar(&pollInterval, "p", 1*time.Second, "How often to poll")
+	flag.BoolVar(&humane, "h", false, "Humanise memory sizes")
 }
 
 type Info struct {
@@ -104,15 +108,22 @@ var (
 	stackHistory     = newHistory(60)
 )
 
+func memToString(n uint64) string {
+	if !humane {
+		return strconv.Itoa(int(n))
+	}
+	return humanise.Bytes(n)
+}
+
 func draw(info Info) {
 	var y int
 
-	for i, r := range fmt.Sprintf("HeapAlloc  : %d", info.MemStats.HeapAlloc) {
+	for i, r := range fmt.Sprintf("HeapAlloc  : %s", memToString(info.MemStats.HeapAlloc)) {
 		tb.SetCell(i, y, r, tb.ColorDefault, tb.ColorDefault)
 	}
 
 	y++
-	for i, r := range fmt.Sprintf("StackInUse : %d", info.MemStats.StackInuse) {
+	for i, r := range fmt.Sprintf("StackInUse : %s", memToString(info.MemStats.StackInuse)) {
 		tb.SetCell(i, y, r, tb.ColorDefault, tb.ColorDefault)
 	}
 
