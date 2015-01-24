@@ -11,6 +11,7 @@ import (
 	"os"
 	"runtime"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -116,6 +117,7 @@ func memToString(n uint64) string {
 }
 
 func draw(info Info) {
+	w, _ := tb.Size()
 	var y int
 
 	for i, r := range fmt.Sprintf("HeapAlloc  : %s", memToString(info.MemStats.HeapAlloc)) {
@@ -129,12 +131,18 @@ func draw(info Info) {
 
 	y++
 	lastGCTime := time.Unix(0, int64(info.MemStats.LastGC))
-	for i, r := range fmt.Sprintf("LastGC     : %v", lastGCTime) {
+	lastGCTimeString := fmt.Sprintf("LastGC     : %s (%s)", lastGCTime.Format(time.ANSIC), humanise.Time(lastGCTime))
+	// pad it with blanks
+	blankLength := w - len(lastGCTimeString)
+	if blankLength > 0 {
+		lastGCTimeString += strings.Repeat(" ", blankLength)
+	}
+	for i, r := range lastGCTimeString {
 		tb.SetCell(i, y, r, tb.ColorDefault, tb.ColorDefault)
 	}
 
 	y++
-	for i, r := range fmt.Sprintf("NextGC     : %d", info.MemStats.NextGC) {
+	for i, r := range fmt.Sprintf("NextGC     : %s", memToString(info.MemStats.NextGC)) {
 		tb.SetCell(i, y, r, tb.ColorDefault, tb.ColorDefault)
 	}
 	y++
