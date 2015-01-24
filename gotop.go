@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"flag"
 	"fmt"
 	"io"
 	"log"
@@ -12,6 +13,16 @@ import (
 
 	tb "github.com/nsf/termbox-go"
 )
+
+var (
+	url          string
+	pollInterval time.Duration
+)
+
+func init() {
+	flag.StringVar(&url, "url", "", "Full url returning expvar JSON")
+	flag.DurationVar(&pollInterval, "p", 1*time.Second, "How often to poll")
+}
 
 type Info struct {
 	MemStats runtime.MemStats
@@ -97,6 +108,11 @@ func eventLoop() {
 }
 
 func main() {
+	flag.Parse()
+	if url == "" {
+		log.Fatal("url required")
+	}
+
 	tb.Init()
 	defer tb.Close()
 
@@ -110,7 +126,7 @@ func main() {
 	}
 
 	infoChan := make(chan Info)
-	go fetchLoop(1*time.Second, "http://golang.org/debug/vars", infoChan)
+	go fetchLoop(pollInterval, url, infoChan)
 	go eventLoop()
 	drawLoop(1*time.Second, infoChan)
 }
