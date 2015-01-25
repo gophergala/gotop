@@ -118,9 +118,14 @@ func memToString(n uint64) string {
 }
 
 func draw(info Info) {
-	w, _ := tb.Size()
 	var y int
+	tb.Clear(tb.ColorDefault, tb.ColorDefault)
 
+	for i, r := range url {
+		tb.SetCell(i, y, r, tb.ColorDefault, tb.ColorDefault)
+	}
+
+	y = y + 2
 	for i, r := range fmt.Sprintf("HeapAlloc  : %s", memToString(info.MemStats.HeapAlloc)) {
 		tb.SetCell(i, y, r, tb.ColorDefault, tb.ColorDefault)
 	}
@@ -133,11 +138,7 @@ func draw(info Info) {
 	y++
 	lastGCTime := time.Unix(0, int64(info.MemStats.LastGC))
 	lastGCTimeString := fmt.Sprintf("LastGC     : %s (%s)", lastGCTime.Format(time.ANSIC), humanise.Time(lastGCTime))
-	// pad it with blanks
-	blankLength := w - len(lastGCTimeString)
-	if blankLength > 0 {
-		lastGCTimeString += strings.Repeat(" ", blankLength)
-	}
+
 	for i, r := range lastGCTimeString {
 		tb.SetCell(i, y, r, tb.ColorDefault, tb.ColorDefault)
 	}
@@ -146,9 +147,8 @@ func draw(info Info) {
 	for i, r := range fmt.Sprintf("NextGC     : %s", memToString(info.MemStats.NextGC)) {
 		tb.SetCell(i, y, r, tb.ColorDefault, tb.ColorDefault)
 	}
-	y++
 
-	y += 4
+	y += 2
 	// Draw sparklines
 	// TODO: Try doubling or tripling the height
 	y++
